@@ -1,0 +1,117 @@
+#основні показників діяльності інтернет-магазину в цілому за рік:
+SELECT FORMAT_DATE("%Y", date_trunc(o.order_date, YEAR)) as period,
+COUNT(distinct o.order_id) as number_of_orders,
+SUM(d.Sales) as total_sales,
+SUM(d.Profit) as total_profit,
+ROUND(SUM(d.Profit)/SUM(d.Sales)*100,1) as profitability
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+       GROUP BY FORMAT_DATE("%Y", date_trunc(o.order_date, YEAR))
+
+
+#дані помісячно:
+SELECT FORMAT_DATE("%m.%Y", date_trunc(o.order_date, MONTH)) as period,
+COUNT(distinct o.order_id) as number_of_orders,
+SUM(d.Sales) as total_sales,
+SUM(d.Profit) as total_profit,
+ROUND(SUM(d.Profit)/SUM(d.Sales)*100,2) as profitability
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+ GROUP BY FORMAT_DATE("%m.%Y", date_trunc(o.order_date, MONTH))
+       ORDER BY period
+
+#основні показники діяльності по регіонах:
+SELECT 
+r.Region,
+COUNT(distinct o.State) as number_of_States,
+COUNT(distinct o.order_id) as number_of_orders,
+SUM(d.Quantity) as quantity_of_products,
+SUM(d.Sales) as total_sales,
+SUM(d.Profit) as total_profit,
+ROUND(SUM(d.Profit)/SUM(d.Sales)*100,1) as profitability
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+ LEFT JOIN `massive-amulet-421715.onlineSales.region` r
+ on o.State = r.State
+ GROUP BY r.Region
+ ORDER BY profitability DESC
+
+#категорії продуктів, що користувалися найбільшим попитом:
+SELECT 
+d.Category,
+SUM(d.Quantity) as quantity_of_products,
+ROUND(SUM(d.Quantity)/(SELECT SUM(Quantity) FROM `massive-amulet-421715.onlineSales.details`)*100,1) as percentage
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+ GROUP BY d.Category
+        ORDER BY quantity_of_products DESC
+
+#рентабельність по категоріям продуктів:
+SELECT 
+d.Category,
+COUNT(distinct o.order_id) as number_of_orders,
+SUM(d.Quantity) as quantity_of_products,
+SUM(d.Sales) as total_sales,
+SUM(d.Profit) as total_profit,
+ROUND(SUM(d.Profit)/SUM(d.Sales)*100,1) as profitability
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+ GROUP BY d.Category
+ ORDER BY quantity_of_products DESC
+
+#рентабельність суб-категорій продуктів кожної категорії окремо (наприклад, 'Clothing') :
+SELECT 
+d.Sub_Category,
+COUNT(distinct o.order_id) as number_of_orders,
+SUM(d.Quantity) as quantity_of_products,
+SUM(d.Sales) as total_sales,
+SUM(d.Profit) as total_profit,
+ROUND(SUM(d.Profit)/SUM(d.Sales)*100,1) as profitability
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+ WHERE d.Category ='Clothing'
+ GROUP BY d.Sub_Category
+ ORDER BY profitability DESC
+
+#рентабельність суб-категорій продуктів, що згруповані по категоріям: 
+SELECT 
+d.Category,
+d.Sub_Category,
+COUNT(distinct o.order_id) as number_of_orders,
+SUM(d.Quantity) as quantity_of_products,
+SUM(d.Sales) as total_sales,
+SUM(d.Profit) as total_profit,
+ROUND(SUM(d.Profit)/SUM(d.Sales)*100,1) as profitability
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+ GROUP BY d.Category, d.Sub_Category
+        ORDER BY Category,profitability DESC
+
+#збиткові суб-категорії продуктів по регіонам:
+SELECT 
+r.Region,
+d.Category,
+d.Sub_Category,
+SUM(d.Quantity) as quantity_of_products,
+SUM(d.Sales) as total_sales,
+SUM(d.Profit) as total_profit,
+ROUND(SUM(d.Profit)/SUM(d.Sales)*100,1) as profitability
+ FROM `massive-amulet-421715.onlineSales.orders` o
+ INNER JOIN `massive-amulet-421715.onlineSales.details` d
+ on o.Order_ID = d.Order_ID
+ LEFT JOIN `massive-amulet-421715.onlineSales.region` r
+ on o.State = r.State
+ GROUP BY r.Region, d.Category, d.Sub_Category
+ HAVING total_profit < 0 
+ ORDER BY Region, Category, profitability DESC
+
+
+
+
